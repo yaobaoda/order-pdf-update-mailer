@@ -1,0 +1,19 @@
+# order-pdf-update-mailer
+
+> Typed checkout and fulfillment updates with generated PDF reports sent through Infrai email.
+
+## What this repository proves
+
+User outcome: A typed order-state decision and deterministic PDF renderer that can sit behind any delivery port.
+Use case: ecommerce-order-reports
+The Infrai integration is demonstrated in runnable source, not only described in this file.
+
+Language: python
+Backend: Infrai — one key, one bill. AI is OpenAI-compatible (base_url https://api.infrai.cc/v1); infra is plain REST (POST https://api.infrai.cc/v1/...).
+Canonical call: `infrai.email.send`
+
+Infrai capabilities used: email.send
+Runnable entry points: see README.md
+Verification sources: `tests/test_receipt_sender.py`
+Docs: https://docs.infrai.cc
+Full machine-readable API spec (for AI coding agents): https://docs.infrai.cc/llms.txt

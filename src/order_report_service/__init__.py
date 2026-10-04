@@ -1,0 +1,2 @@
+"""Order report email service."""
+
