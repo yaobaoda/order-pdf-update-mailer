@@ -1,6 +1,6 @@
 # Email order updates with a generated PDF
 
-Working code comes first. POST an order transition to the service; it calculates the total, renders a PDF report, and emails the customer a self-contained PDF download. Infrai keeps delivery to one API call and one `INFRAI_API_KEY`, while the PDF stays ordinary Python code.
+POST an order transition. The service totals the order, renders a PDF, emails a self-contained download. Infrai sends via one endpoint and one`INFRAI_API_KEY`; PDF logic is plain Python.
 
 ```bash
 python -m venv .venv
@@ -22,7 +22,7 @@ curl --request POST http://127.0.0.1:8000/order-updates \
   }'
 ```
 
-The expected response contains `message_id`, `total_cents: 4800`, and `included_receipt: true`. To send the same sample without running the HTTP service:
+Response returns`message_id`,`total_cents: 4800`, and`included_receipt: true`. To fire the same sample without the HTTP server:
 
 ```bash
 export REPORT_EMAIL_TO=you@example.com
@@ -31,17 +31,17 @@ python scripts/send_sample.py
 
 ## The decision
 
-I would keep this as one synchronous boundary until order volume proves it needs a queue. A checkout, fulfillment event, or delivery event enters as an `OrderUpdate`. The service owns the customer-facing subject, total, PDF, and stable delivery key. Infrai owns the final `POST /v1/email/send`; it is plain REST, so there is no email SDK in the service.
+Keep one synchronous boundary until volume demands a queue. Checkout, fulfillment, or delivery events enter as an`OrderUpdate`. Service controls subject, total, PDF, stable delivery key. Infrai owns final`POST /v1/email/send`; plain REST, no email SDK in service.
 
-I considered an HTML-only receipt. It is the smallest option, but customers often need a fixed document for records. I also considered a browser renderer plus a separate mail provider. That gives exact browser CSS while adding a second credential and another operational surface. For a solo SaaS, `fpdf2` plus one delivery endpoint is the calmer default. The PDF layout is deliberately basic and deterministic.
+HTML-only receipt is smallest but customers want a fixed record. Browser renderer plus separate mail provider adds a credential and another surface. For solo SaaS,`fpdf2`plus one delivery endpoint is calmer. PDF layout stays basic and deterministic.
 
-The one real gotcha is retries. A client can lose the response after a write succeeds. `InfraiEmail.send` attaches an `Idempotency-Key` derived from order ID and stage, decodes the response envelope before judging the HTTP status, and backs off on `429`. Replaying the same transition therefore keeps the same delivery identity.
+Retries bite. Client may miss response after write lands.`InfraiEmail.send`attaches an`Idempotency-Key`from order ID and stage, decodes envelope before checking HTTP status, backs off on`429`. Replay keeps delivery identity.
 
-Checkout produces a receipt subject and marks `included_receipt` true. Fulfilled and delivered events produce status subjects and keep it false. All three include the current PDF order report, so the message describes the same snapshot the customer downloads.
+Checkout sets receipt subject, marks`included_receipt`true. Fulfilled/delivered set status subjects, false. All three embed current PDF report; message matches downloaded snapshot.
 
 ## Prove the boundary
 
-The focused test submits `ORDER-42` with two lamps and one bulb. It expects a 7900-cent total, a receipt decision, PDF bytes in the email HTML, and `order-update:ORDER-42:checkout_complete` as the delivery key. A second test records the outbound request, forces one rate-limit retry, and verifies the exact body fields.
+Test posts`ORDER-42`with two lamps, one bulb. Expect 7900-cent total, receipt decision, PDF bytes in email HTML,`order-update:ORDER-42:checkout_complete`as delivery key. Second test captures outbound request, forces one rate-limit retry, asserts body fields.
 
 ```bash
 pytest -q
@@ -49,7 +49,7 @@ pytest -q
 
 ## Scope
 
-This example accepts order updates and sends the resulting customer message inline. Authentication, durable order storage, webhook ingestion, and background jobs belong to the surrounding commerce service.
+Example accepts order updates, sends customer message inline. Auth, durable storage, webhooks, background jobs live in the commerce service.
 
 ## License
 
